@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>swarm_actions</name>
+  <version>0.0.0</version>
+  <description>The swarm_actions package</description>
+  <maintainer email="contact.ghufranullah@gmail.com">Ghufran</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>actionlib_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>mavros_msgs</depend>
+  <depend>control_msgs</depend>
+  <exec_depend>message_generation</exec_depend>
+  <export>
+  </export>
+</package>

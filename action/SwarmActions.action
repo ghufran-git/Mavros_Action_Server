@@ -1,0 +1,11 @@
+# The goal to follow
+geometry_msgs/PoseStamped goal
+---
+# The result
+int32 error_code
+int32 SUCCESSFUL = 0
+int32 INVALID_GOAL = -1
+
+---
+# Feedback 
+geometry_msgs/PoseStamped current_pose
