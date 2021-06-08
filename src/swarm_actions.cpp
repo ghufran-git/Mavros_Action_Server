@@ -58,6 +58,20 @@ SwarmActions::SwarmActions(const std::string& name) :
 
 void SwarmActions::init(const std::string& ns) {
     ros::NodeHandle p_nh("~");
+    p_nh.getParam("/" + ns + "/x", initial_x);
+    p_nh.getParam("/" + ns + "/y", initial_y);
+    p_nh.getParam("/" + ns + "/z", initial_z);
+    p_nh.getParam("/" + ns + "/R", initial_R);
+    p_nh.getParam("/" + ns + "/P", initial_P);
+    p_nh.getParam("/" + ns + "/Y", initial_Y);
+
+    std::cout<<"Robot: "<<ns<<std::endl;
+    std::cout<<"initial_x: "<<initial_x<<std::endl;
+    std::cout<<"initial_y: "<<initial_y<<std::endl;
+    std::cout<<"initial_z: "<<initial_z<<std::endl;
+    std::cout<<"initial_R: "<<initial_R<<std::endl;
+    std::cout<<"initial_P: "<<initial_P<<std::endl;
+    std::cout<<"initial_Y: "<<initial_Y<<std::endl;
     // setpoint publishing rate MUST be faster than 2Hz. From mavros documentation
     double rate;
     p_nh.param("rate", rate, 100.0);
@@ -89,9 +103,12 @@ void SwarmActions::idle() {
 }
 
 void SwarmActions::executeCb(const GoalPtr &goal) {
-    
     ROS_INFO("executeCB");
     float treshold =0.1;
+    geometry_msgs::PoseStamped goal_to_reach = goal->goal;
+    goal_to_reach.pose.position.x = goal_to_reach.pose.position.x - initial_x;
+    goal_to_reach.pose.position.y = goal_to_reach.pose.position.y - initial_y;
+    goal_to_reach.pose.position.z = goal_to_reach.pose.position.z - initial_z;
 
         auto success = true;
         // check for FCU connection
@@ -104,7 +121,7 @@ void SwarmActions::executeCb(const GoalPtr &goal) {
             }
 
             for (int i = 100; ros::ok() && i > 0; --i){
-            local_cmd_pose_pub_.publish(goal->goal);
+            local_cmd_pose_pub_.publish(goal_to_reach);
             ros::spinOnce();
             ros::Rate(20).sleep();
             }
@@ -118,11 +135,12 @@ void SwarmActions::executeCb(const GoalPtr &goal) {
             auto time = 0.0;
             geometry_msgs::PoseStamped pose_diff;
             geometry_msgs::PoseStamped cmd_pose;
-            
             while (ros::ok() && success == true) {
+                ROS_INFO("in while loop");
                 if(action_server_.isPreemptRequested() || !ros::ok()) {
                     action_server_.setPreempted();
                     success = false;
+                    ROS_INFO("Preempting requested by client");
                     break;
                 }
                 // if (!set_offboard_client_.call(offb_set_mode)){
@@ -130,18 +148,21 @@ void SwarmActions::executeCb(const GoalPtr &goal) {
                 //     success = false;
                 //     break;
                 // }
-                pose_diff.pose.position.x = abs(current_pose_.pose.position.x - goal->goal.pose.position.x);
-                pose_diff.pose.position.y = abs(current_pose_.pose.position.y - goal->goal.pose.position.y);
-                pose_diff.pose.position.z = abs(current_pose_.pose.position.z - goal->goal.pose.position.z);
-                // std::cout<<pose_diff.pose.position.x;
-                if(pose_diff.pose.position.x <= (0.0 + treshold) && pose_diff.pose.position.y <= (0.0 + treshold) && pose_diff.pose.position.z <= (0.0 + treshold) ){
+                pose_diff.pose.position.x = abs(current_pose_.pose.position.x - goal_to_reach.pose.position.x);
+                pose_diff.pose.position.y = abs(current_pose_.pose.position.y - goal_to_reach.pose.position.y);
+                pose_diff.pose.position.z = abs(current_pose_.pose.position.z - goal_to_reach.pose.position.z);
+                std::cout<<"current_pose x: "<< current_pose_.pose.position.x <<std::endl;
+                std::cout<<"current_pose y: "<< current_pose_.pose.position.y <<std::endl;
+                std::cout<<"goal+pose_x :  "<< goal_to_reach.pose.position.x<<std::endl;
+                std::cout<<"goal+pose_y :  "<< goal_to_reach.pose.position.y<<std::endl;
+                if(pose_diff.pose.position.x <= (0.0 + treshold) && pose_diff.pose.position.y <= (0.0 + treshold)){
                     success = true;
                     break;
                 }
                 cmd_pose = current_pose_;
                 ROS_INFO_ONCE("In the while loop");
                 cmd_pose.header.stamp = ros::Time::now();
-                local_cmd_pose_pub_.publish(goal->goal);
+                local_cmd_pose_pub_.publish(goal_to_reach);
                 feedback_.current_pose = cmd_pose;
                 action_server_.publishFeedback(feedback_);
                 time += cycle_time_;
@@ -168,6 +189,9 @@ void SwarmActions::stateCb(const mavros_msgs::State::ConstPtr& msg) {
 
 void SwarmActions::poseCb(const geometry_msgs::PoseStamped::ConstPtr& current_pose) {
     current_pose_ = *current_pose;
+    // current_pose_.pose.position.x = current_pose_.pose.position.x + initial_x;
+    // current_pose_.pose.position.y = current_pose_.pose.position.y + initial_y;
+    // current_pose_.pose.position.z = current_pose_.pose.position.z + initial_z;
 }
 
 int main(int argc, char** argv)

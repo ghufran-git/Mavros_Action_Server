@@ -71,7 +71,13 @@ private:
     // ros
     ros::NodeHandle nh_; // node handle
     ros::Rate rate_ = {ros::Rate(20.0)};  // ros run rate
-
+    float initial_x;
+    float initial_y;
+    float initial_z;
+    float initial_R;
+    float initial_P;
+    float initial_Y;
+    
     // subscribers
     ros::Subscriber local_pose_sub_; // mavros local position subscriber
     ros::Subscriber state_sub_; // mavros state subscriber 
